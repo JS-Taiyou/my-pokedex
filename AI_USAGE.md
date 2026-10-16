@@ -1,0 +1,28 @@
+- AI tools/agents used: 
+    - ZCode, using Planning mode and regular mode after that. The only model used was GLM 3
+
+- Prompts:
+  - ```lets plan a pokedex implementation. We will use a supabase db to hold our data. This is a hono project that we'll use with nodejs. We will use it for both serving the frontend (written with React + Motion + shadcn) and implementing a restful api to serve as the backend. We can make use of the public `poke api` api, but we should follow the rules and cache their output so we don't storm them with our requests. 
+When no particular pokemon is requested, a list is served, for example, `https://pokeapi.co/api/v2/pokemon/` produces `{"count":1351,"next":"https://pokeapi.co/api/v2/pokemon/?offset=20&limit=20","previous":null,"results":[{"name":"bulbasaur","url":"https://pokeapi.co/api/v2/pokemon/1/"},{"name":"ivysaur","url":"https://pokeapi.co/api/v2/pokemon/2/"},{"name":"venusaur","url":"https://pokeapi.co/api/v2/pokemon/3/"},{"name":"charmander","url":"https://pokeapi.co/api/v2/pokemon/4/"},{"name":"charmeleon","url":"https://pokeapi.co/api/v2/pokemon/5/"},{"name":"charizard","url":"https://pokeapi.co/api/v2/pokemon/6/"},{"name":"squirtle","url":"https://pokeapi.co/api/v2/pokemon/7/"},{"name":"wartortle","url":"https://pokeapi.co/api/v2/pokemon/8/"},{"name":"blastoise","url":"https://pokeapi.co/api/v2/pokemon/9/"},{"name":"caterpie","url":"https://pokeapi.co/api/v2/pokemon/10/"},{"name":"metapod","url":"https://pokeapi.co/api/v2/pokemon/11/"},{"name":"butterfree","url":"https://pokeapi.co/api/v2/pokemon/12/"},{"name":"weedle","url":"https://pokeapi.co/api/v2/pokemon/13/"},{"name":"kakuna","url":"https://pokeapi.co/api/v2/pokemon/14/"},{"name":"beedrill","url":"https://pokeapi.co/api/v2/pokemon/15/"},{"name":"pidgey","url":"https://pokeapi.co/api/v2/pokemon/16/"},{"name":"pidgeotto","url":"https://pokeapi.co/api/v2/pokemon/17/"},{"name":"pidgeot","url":"https://pokeapi.co/api/v2/pokemon/18/"},{"name":"rattata","url":"https://pokeapi.co/api/v2/pokemon/19/"},{"name":"raticate","url":"https://pokeapi.co/api/v2/pokemon/20/"}]}`
+Where `count` is the total amount of available pokemon.
+We can try requesting the whole list (only the list), that is using the offset=0 and limit=1351
+If that one is successful, save it to a json which we will use to seed our database, with a bool isCached, default to false, data_url, which is what the endpoint gives us, we should also have primary key, which would be an int and for this particular case, we will use the same ids returned by the endpoint.
+the rest of the pokemon table should contain name, image_url, genders (array of strings or jsonb), category, height, weight, stats (jsonb) and evolutions(jsobn).
+Supporting tables: types (id, name, colors, which is array of strings or jsonb); abilities(id, name, description); users(id stored as uuid, name), user_favorites, pokemon_types, pokemon_weaknesses(pokemon_id, type_id, modifier: varchar255), pokemon_abilities```
+  - ```also use shadcn and Motion to show skeletons for the times when we are waiting for pokemon's info to hit the client. Very important, no call to pokeapi should ever be made from the client, only the backend consumes it, populates our db if it was a cache miss, then produce the response to our client```
+  - ```you know what? I just noticed the artworks seem to follow a pattern using the id, for example pokemon id 1000 has `"front_default":"https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/1000.png"`
+Can we try to use that as a best effort to populate the mages and, if hit, persist it to the db?```
+  - ```now that we are smartly persisting the artworks, do you think we can also smartly persist the types, so that when a filter of un-enriched pokemon makes us aware of the type that uknown pokemon has, then we store the types inside the records of the resulting list of pokemon?``` 
+- Technical decisions:
+  - Prior to any prompting, I had to actually check the api docs and the reference pokedex so I had a clear idea of what to expect from the api, and what features we could find in actual pokemon
+  - I went for Hono since the project is small. I also chose React, Motion and Shadcn out of the popularity they have, not because of the hype, but the better the training data a model had, the least hallucinations we'll encounter.
+  - I chose PostgreSQL hosted on Supabase because was the easiest option to have a reliable and yet free db available remotely
+  - While reading the examples and documentation of the poke api, I discovered a reliable pattern to guess the URL pointing to the sprites, so there were only a couple instances needed to be handled as genuinely empty/null.
+  - I proposed a background running task that would populate preemptively the types of the pokemon, so that we could now have both the sprites AND the type badges even for unvisited pokemon
+  - I proposed the pagination and filtering being integrated into the url so that we could restore state or share urls that would yield the same results.
+  - Motion was chosen because those animations are easily integrated, not too heavy and only some lines of code produce a positive user experience.
+
+- Verification:
+  - I forked the conversation and told the model to write tests and report test coverage. I had to intervene so that instead of wiping the db, it used a different schema (`pokedex_test`), used in `tests/integration/global-setup.ts`
+  - I read the migrations sql files to make sure the schema was modeled correctly. The second migration was needed to perform the background auto caching of pokemon types
+  - Due to the size of the project, I actually tested every part of the interface

@@ -22,8 +22,11 @@ vi.mock('../../src/services/pokeapi.js', async () => {
 })
 
 import { enrichPokemon, syncTypeMembership } from '../../src/services/enrichment.js'
+import { createApp } from '../../src/app.js'
 import { grassTypePayload } from './fixtures.js'
 import { sql } from '../../src/db.js'
+
+const app = createApp()
 
 describe('enrichPokemon (integration)', () => {
   beforeAll(async () => {
@@ -149,5 +152,31 @@ describe('syncTypeMembership (integration)', () => {
       select count(*) as grass_ivysaur from pokemon_types where type_id = 12 and pokemon_id = 2
     `
     expect(row.grass_ivysaur).toBe('0')
+  })
+})
+
+describe('detail route on a cache miss (integration)', () => {
+  it('enriches through the route and answers with the full payload', async () => {
+    // pokemon 2 starts un-enriched in this schema
+    const [before] = await sql`select is_cached from pokemon where id = 2`
+    expect(before.is_cached).toBe(false)
+
+    const res = await app.request('/api/pokemon/ivysaur')
+    expect(res.status).toBe(200)
+    const d = (await res.json()) as Record<string, unknown>
+
+    expect(d.is_cached).toBe(true)
+    expect(d.name).toBe('ivysaur')
+    expect(d.types).toEqual([
+      { id: 12, name: 'grass', colors: expect.any(Array) },
+      { id: 4, name: 'poison', colors: expect.any(Array) },
+    ])
+    // stage 1 is enriched (real artwork), stage 3 does not exist as a row
+    // (pattern-derived artwork, is_cached false)
+    expect(d.evolutions).toEqual([
+      { id: 1, name: 'bulbasaur', image_url: expect.stringContaining('1.png'), is_cached: true },
+      { id: 2, name: 'ivysaur', image_url: expect.any(String), is_cached: true },
+      { id: 3, name: 'venusaur', image_url: expect.stringContaining('3.png'), is_cached: false },
+    ])
   })
 })

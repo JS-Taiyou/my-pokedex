@@ -1,0 +1,23 @@
+insert into types (id, name, colors) values
+  (1, 'normal', '["#9FA19F", "#C1C2C1"]'::jsonb),
+  (2, 'fighting', '["#FF8000", "#FFAC59"]'::jsonb),
+  (3, 'flying', '["#81B9EF", "#ADD2F5"]'::jsonb),
+  (4, 'poison', '["#9141CB", "#B884DD"]'::jsonb),
+  (5, 'ground', '["#915121", "#B88E6F"]'::jsonb),
+  (6, 'rock', '["#AFA981", "#CBC7AD"]'::jsonb),
+  (7, 'bug', '["#91A119", "#B8C26A"]'::jsonb),
+  (8, 'ghost', '["#704170", "#A284A2"]'::jsonb),
+  (9, 'steel', '["#60A1B8", "#98C2D1"]'::jsonb),
+  (10, 'fire', '["#E62829", "#EF7374"]'::jsonb),
+  (11, 'water', '["#2980EF", "#74ACF5"]'::jsonb),
+  (12, 'grass', '["#3FA129", "#82C274"]'::jsonb),
+  (13, 'electric', '["#FAC000", "#FCD659"]'::jsonb),
+  (14, 'psychic', '["#EF4179", "#F584A8"]'::jsonb),
+  (15, 'ice', '["#3DCEF3", "#81DFF7"]'::jsonb),
+  (16, 'dragon', '["#5060E1", "#8D98EC"]'::jsonb),
+  (17, 'dark', '["#624D4E", "#998B8C"]'::jsonb),
+  (18, 'fairy', '["#EF70EF", "#F5A2F5"]'::jsonb),
+  (19, 'stellar', '["#40B5A5", "#83CFC5"]'::jsonb),
+  (10001, 'unknown', '["#68A090", "#9DC1B7"]'::jsonb),
+  (10002, 'shadow', '["#705898", "#A292BC"]'::jsonb)
+on conflict (id) do update set name = excluded.name, colors = excluded.colors;
